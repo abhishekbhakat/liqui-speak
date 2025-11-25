@@ -17,7 +17,7 @@ def handle_config(args) -> int:
     if args.force:
         logger.info("Force mode enabled - reinstalling everything")
 
-    success = setup_manager.run_full_setup(verbose=args.verbose)
+    success = setup_manager.run_full_setup(verbose=args.verbose, force=args.force)
 
     if success:
         logger.info("Configuration complete!")
@@ -34,7 +34,7 @@ def handle_transcribe(args) -> int:
     """Handle transcribe command."""
     logger = logging.getLogger("liqui_speak")
 
-    # Basic path validation
+
     if '\x00' in args.audio_file:
         logger.error("Invalid file path")
         return 1
@@ -51,7 +51,6 @@ def handle_transcribe(args) -> int:
     try:
         result = transcribe_audio(
             str(audio_file),
-            play_audio=args.play_audio,
             verbose=args.verbose
         )
 

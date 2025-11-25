@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 def transcribe_audio(
     audio_file_path: str,
-    play_audio: bool = False,
     verbose: bool = False
 ) -> str | None:
     """
@@ -21,7 +20,6 @@ def transcribe_audio(
 
     Args:
         audio_file_path: Path to audio file
-        play_audio: Whether to play audio during transcription
         verbose: Whether to show detailed progress
 
     Returns:
@@ -42,7 +40,7 @@ def transcribe_audio(
             converted_file = convert_audio_for_transcription(audio_file_path, "wav")
 
             try:
-                return _transcribe_wav_file(converted_file, play_audio, verbose)
+                return _transcribe_wav_file(converted_file, verbose)
             finally:
 
                 try:
@@ -55,12 +53,11 @@ def transcribe_audio(
             return None
     else:
 
-        return _transcribe_wav_file(audio_file_path, play_audio, verbose)
+        return _transcribe_wav_file(audio_file_path, verbose)
 
 
 def _transcribe_wav_file(
     audio_file_path: str,
-    play_audio: bool = False,
     verbose: bool = False
 ) -> str | None:
     """
@@ -68,7 +65,6 @@ def _transcribe_wav_file(
 
     Args:
         audio_file_path: Path to WAV file
-        play_audio: Whether to play audio during transcription
         verbose: Whether to show detailed progress
 
     Returns:
@@ -97,27 +93,3 @@ def _transcribe_wav_file(
         if verbose:
             logger.error(f"❌ Transcription failed: {e}")
         return None
-
-
-def transcribe_with_chunks(
-    audio_file_path: str,
-    chunk_duration: float = 2.0,
-    overlap: float = 0.5,
-    play_audio: bool = False,
-    verbose: bool = False
-) -> str | None:
-    """
-    Transcribe audio with real-time chunk processing.
-
-    Args:
-        audio_file_path: Path to audio file
-        chunk_duration: Duration of each chunk in seconds
-        overlap: Overlap between chunks
-        play_audio: Whether to play audio during transcription
-        verbose: Whether to show progress
-
-    Returns:
-        Complete transcription
-    """
-
-    return transcribe_audio(audio_file_path, play_audio, verbose)

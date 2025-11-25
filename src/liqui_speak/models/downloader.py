@@ -69,12 +69,12 @@ class ModelDownloader:
 
         try:
 
-            zip_path = runners_dir / binary_zip
             hf_hub_download(
                 repo_id=self.repo_id,
                 filename=binary_zip,
                 local_dir=str(target_dir)
             )
+            zip_path = target_dir / binary_zip
 
 
             self.logger.info("Extracting binary...")

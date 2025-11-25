@@ -54,10 +54,49 @@ class PlatformDetector:
     def check_dependencies(self) -> dict:
         """Check if required system dependencies are available."""
         deps = {
-            "portaudio": self._check_command("portaudio"),
+            "portaudio": self._check_portaudio(),
             "ffmpeg": self._check_command("ffmpeg"),
         }
         return deps
+
+    def _check_portaudio(self) -> bool:
+        """Check if portaudio library is available."""
+
+        import platform
+        system = platform.system()
+
+        if system == "Darwin":
+
+            paths = [
+                "/opt/homebrew/lib/libportaudio.dylib",
+                "/usr/local/lib/libportaudio.dylib",
+                "/usr/lib/libportaudio.dylib",
+            ]
+        elif system == "Linux":
+            paths = [
+                "/usr/lib/x86_64-linux-gnu/libportaudio.so",
+                "/usr/lib/libportaudio.so",
+                "/usr/local/lib/libportaudio.so",
+            ]
+        elif system == "Windows":
+            paths = [
+                "portaudio.dll",
+                "libportaudio.dll",
+            ]
+        else:
+            return False
+
+
+        for path in paths:
+            if Path(path).exists():
+                return True
+
+
+        try:
+            import importlib.util
+            return importlib.util.find_spec("pyaudio") is not None
+        except ImportError:
+            return False
 
     def _check_command(self, command: str) -> bool:
         """Check if a system command exists."""

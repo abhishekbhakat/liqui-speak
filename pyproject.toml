@@ -1,6 +1,6 @@
 [project]
 name = "liqui-speak"
-version = "0.1.1"
+version = "0.2.0"
 description = "One-command setup for real-time audio transcription with LFM2-Audio model"
 readme = "README.md"
 authors = [

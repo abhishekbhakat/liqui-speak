@@ -1,13 +1,11 @@
-
 """Command-line interface for Liqui-Speak."""
 
 import argparse
 import sys
 from importlib.metadata import version
 
+from liqui_speak.cli.commands import handle_config, handle_transcribe
 from liqui_speak.core.config import setup_logging
-
-from .commands import handle_config, handle_transcribe
 
 
 def main():
@@ -23,7 +21,7 @@ Examples:
   liqui-speak config
   liqui-speak transcribe audio.m4a
   liqui-speak transcribe audio.wav --verbose
-  liqui-speak transcribe audio.mp3 --play-audio
+
         """
     )
 
@@ -60,11 +58,7 @@ Examples:
         "audio_file",
         help="Path to audio file (M4A, AAC, WAV, MP3, etc.)"
     )
-    transcribe_parser.add_argument(
-        "--play-audio",
-        action="store_true",
-        help="Play audio in background during transcription"
-    )
+
     transcribe_parser.add_argument(
         "--verbose",
         action="store_true",
@@ -106,3 +100,5 @@ Examples:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+__all__ = ["main"]

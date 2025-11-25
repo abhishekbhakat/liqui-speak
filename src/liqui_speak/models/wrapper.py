@@ -6,12 +6,13 @@ from pathlib import Path
 
 from liqui_speak.core.config import get_config
 from liqui_speak.models.base import BaseModelBackend
+from liqui_speak.platform.detector import PlatformDetector
 
 
 class LFM2AudioWrapper(BaseModelBackend):
     """Wrapper for llama-lfm2-audio binary."""
 
-    def __init__(self, config: dict[str, str] | None = None):
+    def __init__(self, config: dict[str, str | int | float] | None = None):
         """
         Initialize the model wrapper.
 
@@ -25,9 +26,9 @@ class LFM2AudioWrapper(BaseModelBackend):
     def _validate_config(self) -> None:
         """Validate that all required files exist."""
         required_files = [
-            self.config["model_path"],
-            self.config["mmproj_path"],
-            self.config["audiodecoder_path"],
+            str(self.config["model_path"]),
+            str(self.config["mmproj_path"]),
+            str(self.config["audiodecoder_path"]),
         ]
 
         for file_path in required_files:
@@ -53,14 +54,13 @@ class LFM2AudioWrapper(BaseModelBackend):
             raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
 
 
-        from liqui_speak.platform.detector import PlatformDetector
         detector = PlatformDetector()
         platform = detector.get_supported_platform()
 
         if not platform:
             raise RuntimeError(f"Unsupported platform: {detector.system}-{detector.machine}")
 
-        binary_path = Path(self.config["binary_path"]) / platform / "bin" / "llama-lfm2-audio"
+        binary_path = Path(str(self.config["binary_path"])) / platform / "bin" / "llama-lfm2-audio"
 
         if not binary_path.exists():
             raise ValueError(f"Binary not found: {binary_path}")
@@ -68,16 +68,16 @@ class LFM2AudioWrapper(BaseModelBackend):
 
         cmd = [
             str(binary_path),
-            "-m", self.config["model_path"],
-            "--mmproj", self.config["mmproj_path"],
-            "-mv", self.config["audiodecoder_path"],
+            "-m", str(self.config["model_path"]),
+            "--mmproj", str(self.config["mmproj_path"]),
+            "-mv", str(self.config["audiodecoder_path"]),
             "-sys", "Perform ASR.",
             "--audio", str(audio_path)
         ]
 
         try:
 
-            timeout = int(self.config.get("transcription_timeout", "60"))
+            timeout = float(self.config.get("transcription_timeout", 60))
 
 
             result = subprocess.run(
@@ -87,7 +87,7 @@ class LFM2AudioWrapper(BaseModelBackend):
                 text=True,
                 timeout=timeout,
                 check=False,
-                shell=False  # Explicitly disable shell for security
+                shell=False
             )
 
             if result.returncode != 0:
@@ -108,7 +108,7 @@ class LFM2AudioWrapper(BaseModelBackend):
     def _parse_output(self, output: str | None) -> str | None:
         """Parse model output to extract transcription - silent by default."""
         if output is None:
-            return ""
+            return None
         lines = output.strip().split('\n')
 
 
@@ -142,7 +142,7 @@ class LFM2AudioWrapper(BaseModelBackend):
             if test_audio_path:
 
                 result = self.transcribe_audio_file(test_audio_path)
-                return len(result.strip()) > 0 if result else False
+                return len(result.strip()) > 0 if result is not None else False
             else:
 
 

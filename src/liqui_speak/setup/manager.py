@@ -21,12 +21,13 @@ class SetupManager:
         self.setup_dir.mkdir(exist_ok=True)
         self.logger = logging.getLogger("liqui_speak")
 
-    def run_full_setup(self, verbose: bool = True) -> bool:
+    def run_full_setup(self, verbose: bool = True, force: bool = False) -> bool:
         """
         Run complete setup process.
 
         Args:
             verbose: Show detailed progress
+            force: Force reinstallation even if dependencies already exist
 
         Returns:
             True if setup successful
@@ -38,17 +39,17 @@ class SetupManager:
 
             if verbose:
                 self.logger.info("Installing system dependencies...")
-            self._install_system_dependencies()
+            self._install_system_dependencies(force=force)
 
 
             if verbose:
                 self.logger.info("Setting up Python environment...")
-            self._setup_python_environment()
+            self._setup_python_environment(force=force)
 
 
             if verbose:
                 self.logger.info("Downloading models...")
-            self._download_models()
+            self._download_models(force=force)
 
 
             if verbose:
@@ -67,28 +68,31 @@ class SetupManager:
                 self.logger.info("Try running with --verbose for more details")
             return False
 
-    def _install_system_dependencies(self) -> None:
+    def _install_system_dependencies(self, force: bool = False) -> None:
         """Install PortAudio and FFmpeg system dependencies."""
         system = self.platform.system
 
         if system == "Darwin":
-            self._install_macos_dependencies()
+            self._install_macos_dependencies(force=force)
         elif system == "Linux":
-            self._install_linux_dependencies()
+            self._install_linux_dependencies(force=force)
         elif system == "Windows":
-            self._install_windows_dependencies()
+            self._install_windows_dependencies(force=force)
         else:
             raise RuntimeError(f"Unsupported platform: {system}")
 
-    def _install_macos_dependencies(self) -> None:
+    def _install_macos_dependencies(self, force: bool = False) -> None:
         """Install dependencies on macOS."""
         if not self._command_exists("brew"):
             raise RuntimeError("Homebrew not found. Please install from https://brew.sh")
 
         packages = ["portaudio", "ffmpeg"]
         for package in packages:
-            self.logger.info(f"Installing {package}...")
-            subprocess.run(["brew", "install", package], check=True)
+            if force or not self._command_exists(package):
+                self.logger.info(f"Installing {package}...")
+                subprocess.run(["brew", "install", package], check=True)
+            else:
+                self.logger.info(f"{package} already installed, skipping...")
 
     def _confirm_sudo_action(self, action_description: str) -> bool:
         """Ask user for confirmation before running sudo commands."""
@@ -96,7 +100,7 @@ class SetupManager:
         response = input("Continue? [y/N]: ").strip().lower()
         return response in ('y', 'yes')
 
-    def _install_linux_dependencies(self) -> None:
+    def _install_linux_dependencies(self, force: bool = False) -> None:
         """Install dependencies on Linux."""
         if not self._confirm_sudo_action("install portaudio and ffmpeg"):
             raise RuntimeError("User cancelled installation")
@@ -117,7 +121,7 @@ class SetupManager:
         else:
             raise RuntimeError("No supported package manager found (apt/yum/pacman)")
 
-    def _install_windows_dependencies(self) -> None:
+    def _install_windows_dependencies(self, force: bool = False) -> None:
         """Install dependencies on Windows."""
         if self._command_exists("choco"):
             packages = ["portaudio", "ffmpeg"]
@@ -131,7 +135,7 @@ class SetupManager:
                 "Please install Chocolatey from https://chocolatey.org"
             )
 
-    def _setup_python_environment(self) -> None:
+    def _setup_python_environment(self, force: bool = False) -> None:
         """Verify Python version and install PyDub/python-magic if needed."""
 
         self.logger.info(f"Python {sys.version.split()[0]} detected")
@@ -179,7 +183,7 @@ class SetupManager:
                     f"python-magic installation failed. Ensure libmagic is installed: {e}"
                 ) from e
 
-    def _download_models(self) -> None:
+    def _download_models(self, force: bool = False) -> None:
         """Download LFM2-Audio model and binaries."""
         model_dir = self.setup_dir / "models"
         model_dir.mkdir(exist_ok=True)
@@ -218,7 +222,7 @@ class SetupManager:
         else:
             self.logger.warning(f"Platform {detector.system}-{detector.machine} not supported for binaries")
 
-    def _verify_installation(self) -> None:
+    def _verify_installation(self, force: bool = False) -> None:
         """Verify that everything is working correctly."""
 
         deps = {
@@ -252,6 +256,8 @@ class SetupManager:
             if command == "ffmpeg":
                 subprocess.run([command, "-version"],
                              capture_output=True, check=True)
+            elif command == "portaudio":
+                return self.platform._check_portaudio()
             else:
                 subprocess.run([command, "--version"],
                              capture_output=True, check=True)

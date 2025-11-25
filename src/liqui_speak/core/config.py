@@ -22,7 +22,7 @@ def setup_logging() -> logging.Logger:
     return logging.getLogger("liqui_speak")
 
 
-def get_config() -> dict[str, str]:
+def get_config() -> dict[str, str | int | float]:
     """
     Get configuration for transcription.
 
@@ -49,7 +49,15 @@ def get_config() -> dict[str, str]:
     for key in config:
         env_key = f"LIQUI_SPEAK_{key.upper()}"
         if env_key in os.environ:
-            config[key] = os.environ[env_key]
+            if key in ["sample_rate", "channels", "transcription_timeout"]:
+                try:
+                    config[key] = int(os.environ[env_key])
+                except ValueError:
+                    config[key] = float(os.environ[env_key])
+            elif key in ["chunk_duration", "overlap"]:
+                config[key] = float(os.environ[env_key])
+            else:
+                config[key] = os.environ[env_key]
 
     return config
 
@@ -66,7 +74,7 @@ def is_configured() -> bool:
     ]
 
     for file_path in required_files:
-        if not Path(file_path).exists():
+        if not Path(str(file_path)).exists():
             return False
 
     return True

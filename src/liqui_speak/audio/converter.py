@@ -39,7 +39,7 @@ def convert_audio_for_transcription(input_file: str, output_format: str = "wav")
 
 
         audio = audio.set_channels(1)
-        audio = audio.set_frame_rate(get_config()["sample_rate"])
+        audio = audio.set_frame_rate(int(get_config()["sample_rate"]))
 
 
         temp_file = tempfile.NamedTemporaryFile(
