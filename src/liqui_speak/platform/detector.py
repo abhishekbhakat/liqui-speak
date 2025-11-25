@@ -26,14 +26,14 @@ class PlatformDetector:
     def get_supported_platform(self) -> str | None:
         """
         Get the platform identifier for llama.cpp binary downloads.
-        
+
         Returns:
             Platform string like 'macos-arm64' or None if unsupported
         """
         system = self.system.lower()
         machine = self.machine.lower()
 
-        # Map machine architecture
+
         if machine in ["x86_64", "amd64"]:
             arch = "x64"
         elif machine in ["arm64", "aarch64"]:
@@ -41,7 +41,7 @@ class PlatformDetector:
         else:
             return None
 
-        # Map system
+
         if system == "darwin":
             return f"macos-{arch}"
         elif system == "linux":
@@ -78,10 +78,10 @@ class PlatformDetector:
         if self.system != "Darwin":
             return None
 
-        # Common Homebrew paths
+
         paths = [
-            Path("/opt/homebrew"),  # Apple Silicon
-            Path("/usr/local"),     # Intel Macs
+            Path("/opt/homebrew"),
+            Path("/usr/local"),
         ]
 
         for path in paths:

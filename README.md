@@ -31,7 +31,26 @@ liqui-speak audio.m4a
 ### Prerequisites
 
 - Python >= 3.12
-- One of: Homebrew (macOS), apt/yum/pacman (Linux), Chocolatey (Windows)
+- libmagic (for audio format detection)
+- Package manager: Homebrew (macOS/Linux), apt/yum/pacman (Linux), or Chocolatey (Windows)
+
+**Installing libmagic:**
+```bash
+# macOS
+brew install libmagic
+
+# Ubuntu/Debian
+sudo apt-get install libmagic1
+
+# Fedora/RHEL/CentOS
+sudo dnf install file-libs
+
+# Arch Linux
+sudo pacman -S file
+
+# Windows
+pip install python-magic-bin
+```
 
 ### Install Package
 
@@ -126,20 +145,7 @@ make type-check
 make test
 ```
 
-### Project Structure
 
-```
-liqui-speak/
-├── src/liqui_speak/
-│   ├── setup_manager.py    # Automated setup logic
-│   ├── audio_converter.py  # PyDub-based conversion
-│   ├── model_downloader.py # Hugging Face downloads
-│   ├── transcription.py    # Core transcription
-│   └── cli.py             # Command-line interface
-├── tests/                  # Test suite
-├── Makefile               # Development commands
-└── pyproject.toml         # Project configuration
-```
 
 ## 🔍 Troubleshooting
 

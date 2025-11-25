@@ -10,21 +10,20 @@ install-dev:
 
 # Run linting
 lint:
-	ruff check src tests
-	flake8 src tests
+	uv run ruff check src tests
 
 # Format code
 format:
-	ruff format src tests
-	black src tests
+	uv run ruff format src tests
+	uv run black src tests
 
 # Type checking
 type-check:
-	pyright
+	uv run pyright
 
 # Run tests
 test:
-	pytest
+	uv run pytest
 
 # Clean build artifacts
 clean:

@@ -5,8 +5,9 @@ import argparse
 import sys
 from importlib.metadata import version
 
-from liqui_speak.cli.commands import handle_config, handle_transcribe
 from liqui_speak.core.config import setup_logging
+
+from .commands import handle_config, handle_transcribe
 
 
 def main():

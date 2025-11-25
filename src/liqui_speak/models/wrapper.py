@@ -1,23 +1,26 @@
 """Model wrapper for llama.cpp LFM2-Audio integration."""
 
+import logging
 import subprocess
 from pathlib import Path
 
-from liqui_speak.config import get_config
+from liqui_speak.core.config import get_config
+from liqui_speak.models.base import BaseModelBackend
 
 
-class LFM2AudioWrapper:
+class LFM2AudioWrapper(BaseModelBackend):
     """Wrapper for llama-lfm2-audio binary."""
 
     def __init__(self, config: dict[str, str] | None = None):
         """
         Initialize the model wrapper.
-        
+
         Args:
             config: Configuration dictionary (auto-detected if None)
         """
         self.config = config or get_config()
         self._validate_config()
+        self.logger = logging.getLogger("liqui_speak")
 
     def _validate_config(self) -> None:
         """Validate that all required files exist."""
@@ -31,16 +34,16 @@ class LFM2AudioWrapper:
             if not Path(file_path).exists():
                 raise ValueError(f"Missing required file: {file_path}")
 
-    def transcribe_audio_file(self, audio_file_path: str) -> str:
+    def transcribe_audio_file(self, audio_file_path: str) -> str | None:
         """
         Transcribe audio file to text using LFM2 model.
-        
+
         Args:
             audio_file_path: Path to audio file
-            
+
         Returns:
-            Transcribed text
-            
+            Transcribed text or None if transcription failed
+
         Raises:
             RuntimeError: If transcription fails
         """
@@ -49,8 +52,8 @@ class LFM2AudioWrapper:
         if not audio_path.exists():
             raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
 
-        # Get platform-specific binary path
-        from liqui_speak.platform_utils import PlatformDetector
+
+        from liqui_speak.platform.detector import PlatformDetector
         detector = PlatformDetector()
         platform = detector.get_supported_platform()
 
@@ -62,7 +65,7 @@ class LFM2AudioWrapper:
         if not binary_path.exists():
             raise ValueError(f"Binary not found: {binary_path}")
 
-        # Build command
+
         cmd = [
             str(binary_path),
             "-m", self.config["model_path"],
@@ -73,84 +76,85 @@ class LFM2AudioWrapper:
         ]
 
         try:
-            # Run transcription
+
+            timeout = int(self.config.get("transcription_timeout", "60"))
+
+
             result = subprocess.run(
                 cmd,
-                capture_output=True,
-                text=False,  # Get bytes to handle encoding issues
-                timeout=60,  # 60 second timeout
-                check=False
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=timeout,
+                check=False,
+                shell=False  # Explicitly disable shell for security
             )
 
             if result.returncode != 0:
                 error_msg = f"Transcription failed with code {result.returncode}"
-                if result.stderr:
-                    error_msg += f": {result.stderr.decode('utf-8', errors='replace')}"
+                if result.stdout:
+                    error_msg += f": {result.stdout}"
                 raise RuntimeError(error_msg)
 
-            # Parse output
+
             transcription = self._parse_output(result.stdout)
             return transcription
 
         except subprocess.TimeoutExpired:
-            raise RuntimeError("Transcription timed out (60s)")
+            raise RuntimeError(f"Transcription timed out ({timeout}s)") from None
         except Exception as e:
-            raise RuntimeError(f"Transcription failed: {str(e)}")
+            raise RuntimeError(f"Transcription failed: {str(e)}") from e
 
-    def _parse_output(self, output: bytes) -> str:
-        """Parse model output to extract transcription."""
-        try:
-            output_str = output.decode('utf-8', errors='replace')
-        except Exception:
-            output_str = str(output)
+    def _parse_output(self, output: str) -> str:
+        """Parse model output to extract transcription - silent by default."""
+        lines = output.strip().split('\n')
 
-        # Simple parsing - look for text after the audio processing messages
-        lines = output_str.strip().split('\n')
 
-        # Skip common model loading messages
         transcription_lines = []
         for line in lines:
             line = line.strip()
-
-            # Skip empty lines and model messages
             if not line:
                 continue
 
-            # Skip model loading messages
-            if any(msg in line.lower() for msg in [
-                "loading", "model", "load_gguf", "loaded",
-                "gguf", "encoding", "slice"
+
+            if any(pattern in line for pattern in [
+                "load_gguf:", "main:", "encoding audio", "audio slice",
+                "decoding audio", "n_tokens_batch", "audio decoded"
             ]):
                 continue
 
-            # Skip timing/performance info
-            if "ms" in line or "tokens" in line or "speed" in line:
+
+            if " ms" in line:
                 continue
 
-            # This should be transcription text
+
             transcription_lines.append(line)
 
-        # Join transcription lines
+
         transcription = ' '.join(transcription_lines).strip()
-
-        # Clean up extra whitespace
-        transcription = ' '.join(transcription.split())
-
-        return transcription
+        return transcription if transcription else None
 
     def test_model(self, test_audio_path: str | None = None) -> bool:
         """Test if the model is working correctly."""
         try:
             if test_audio_path:
-                # Test with provided audio
+
                 result = self.transcribe_audio_file(test_audio_path)
                 return len(result.strip()) > 0
             else:
-                # Create a simple test audio
-                # This would require audio generation capabilities
-                # For now, just check if model loads
+
+
+
                 return True
 
         except Exception as e:
-            print(f"Model test failed: {e}")
+            self.logger.error(f"Model test failed: {e}")
+            return False
+
+    def is_available(self) -> bool:
+        """Check if the model backend is available and properly configured."""
+        try:
+            self._validate_config()
+            return True
+        except (ValueError, FileNotFoundError):
             return False

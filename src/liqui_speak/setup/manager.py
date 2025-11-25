@@ -1,11 +1,14 @@
 """Automated setup manager for Liqui-Speak."""
 
+import importlib
+import importlib.util
+import logging
 import subprocess
 import sys
 from pathlib import Path
 
-from liqui_speak.model_downloader import ModelDownloader
-from liqui_speak.platform_utils import PlatformDetector
+from liqui_speak.models.downloader import ModelDownloader
+from liqui_speak.platform.detector import PlatformDetector
 
 
 class SetupManager:
@@ -16,57 +19,59 @@ class SetupManager:
         self.model_downloader = ModelDownloader()
         self.setup_dir = Path.home() / ".liqui_speak"
         self.setup_dir.mkdir(exist_ok=True)
+        self.logger = logging.getLogger("liqui_speak")
 
     def run_full_setup(self, verbose: bool = True) -> bool:
         """
         Run complete setup process.
-        
+
         Args:
             verbose: Show detailed progress
-            
+
         Returns:
             True if setup successful
         """
         if verbose:
-            print("🚀 Starting Liqui-Speak setup...")
+            self.logger.info("Starting Liqui-Speak setup...")
 
         try:
-            # Phase 1: System dependencies
+
             if verbose:
-                print("\n📦 Installing system dependencies...")
+                self.logger.info("Installing system dependencies...")
             self._install_system_dependencies()
 
-            # Phase 2: Python environment
+
             if verbose:
-                print("\n🐍 Setting up Python environment...")
+                self.logger.info("Setting up Python environment...")
             self._setup_python_environment()
 
-            # Phase 3: Download models
+
             if verbose:
-                print("\n📥 Downloading models...")
+                self.logger.info("Downloading models...")
             self._download_models()
 
-            # Phase 4: Verify installation
+
             if verbose:
-                print("\n✅ Verifying installation...")
+                self.logger.info("Verifying installation...")
             self._verify_installation()
 
             if verbose:
-                print("\n🎉 Setup complete! You can now use: liqui-speak your_audio.m4a")
+                self.logger.info("Setup complete! You can now use: liqui-speak your_audio.m4a")
 
             return True
 
         except Exception as e:
-            if verbose:
-                print(f"\n❌ Setup failed: {e}")
-                print("💡 Try running with --verbose for more details")
+
+            self.logger.error(f"Setup failed: {e}")
+            if not verbose:
+                self.logger.info("Try running with --verbose for more details")
             return False
 
     def _install_system_dependencies(self) -> None:
         """Install PortAudio and FFmpeg system dependencies."""
         system = self.platform.system
 
-        if system == "Darwin":  # macOS
+        if system == "Darwin":
             self._install_macos_dependencies()
         elif system == "Linux":
             self._install_linux_dependencies()
@@ -82,21 +87,30 @@ class SetupManager:
 
         packages = ["portaudio", "ffmpeg"]
         for package in packages:
-            print(f"Installing {package}...")
+            self.logger.info(f"Installing {package}...")
             subprocess.run(["brew", "install", package], check=True)
+
+    def _confirm_sudo_action(self, action_description: str) -> bool:
+        """Ask user for confirmation before running sudo commands."""
+        self.logger.warning(f"This will run sudo commands to {action_description}")
+        response = input("Continue? [y/N]: ").strip().lower()
+        return response in ('y', 'yes')
 
     def _install_linux_dependencies(self) -> None:
         """Install dependencies on Linux."""
-        # Try apt first (Ubuntu/Debian)
+        if not self._confirm_sudo_action("install portaudio and ffmpeg"):
+            raise RuntimeError("User cancelled installation")
+
+
         if self._command_exists("apt-get"):
             packages = ["portaudio19-dev", "ffmpeg"]
             subprocess.run(["sudo", "apt-get", "update"], check=False)
             subprocess.run(["sudo", "apt-get", "install", "-y"] + packages, check=True)
-        # Try yum (CentOS/RHEL)
+
         elif self._command_exists("yum"):
             packages = ["portaudio-devel", "ffmpeg"]
             subprocess.run(["sudo", "yum", "install", "-y"] + packages, check=True)
-        # Try pacman (Arch)
+
         elif self._command_exists("pacman"):
             packages = ["portaudio", "ffmpeg"]
             subprocess.run(["sudo", "pacman", "-S", "--noconfirm"] + packages, check=True)
@@ -118,43 +132,76 @@ class SetupManager:
             )
 
     def _setup_python_environment(self) -> None:
-        """Verify Python version and install PyDub if needed."""
-        if sys.version_info < (3, 12):
-            raise RuntimeError(f"Python >= 3.12 required, found {sys.version}")
+        """Verify Python version and install PyDub/python-magic if needed."""
 
-        print(f"✅ Python {sys.version.split()[0]} detected")
+        self.logger.info(f"Python {sys.version.split()[0]} detected")
 
-        # Check if pydub is available
-        try:
-            import pydub
-            print("✅ PyDub already installed")
-        except ImportError:
-            print("Installing PyDub...")
+
+        if importlib.util.find_spec("pydub") is not None:
+            self.logger.info("PyDub already installed")
+        else:
+            self.logger.info("Installing PyDub...")
             subprocess.run([sys.executable, "-m", "pip", "install", "pydub"], check=True)
+
+
+        self._install_python_magic()
+
+    def _install_python_magic(self) -> None:
+        """Install python-magic with platform-specific handling."""
+
+        if importlib.util.find_spec("magic") is not None:
+            self.logger.info("python-magic already installed")
+            return
+
+        system = self.platform.system
+
+        if system == "Windows":
+
+            self.logger.info("Installing python-magic-bin for Windows...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "python-magic-bin"], check=True)
+        else:
+
+            self.logger.info("Installing python-magic...")
+            subprocess.run([sys.executable, "-m", "pip", "install", "python-magic"], check=True)
+
+
+        try:
+            importlib.util.find_spec("magic")
+            self.logger.info("python-magic installation verified")
+        except ImportError as e:
+            if system == "Windows":
+                raise RuntimeError(
+                    "python-magic installation failed. Try manually installing "
+                    "python-magic-bin: pip install python-magic-bin"
+                ) from e
+            else:
+                raise RuntimeError(
+                    f"python-magic installation failed. Ensure libmagic is installed: {e}"
+                ) from e
 
     def _download_models(self) -> None:
         """Download LFM2-Audio model and binaries."""
         model_dir = self.setup_dir / "models"
         model_dir.mkdir(exist_ok=True)
 
-        # Check if models already exist
+
         model_files = [
             "LFM2-Audio-1.5B-Q8_0.gguf",
             "mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf",
             "audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf"
         ]
 
-        # Check if all model files exist
+
         all_models_exist = all((model_dir / filename).exists() for filename in model_files)
 
         if all_models_exist:
-            print("✅ Model files already downloaded")
+            self.logger.info("Model files already downloaded")
         else:
-            print("📥 Downloading LFM2-Audio-1.5B model files...")
-            # Download model files
+            self.logger.info("Downloading LFM2-Audio-1.5B model files...")
+
             self.model_downloader.download_all_models(model_dir)
 
-        # Check if binary exists
+
         from liqui_speak.platform_utils import PlatformDetector
         detector = PlatformDetector()
         platform = detector.get_supported_platform()
@@ -162,28 +209,29 @@ class SetupManager:
         if platform:
             binary_path = model_dir / "runners" / platform / "bin" / "llama-lfm2-audio"
             if binary_path.exists():
-                print(f"✅ Binary already downloaded for {platform}")
+                self.logger.info(f"Binary already downloaded for {platform}")
             else:
-                print(f"📥 Downloading {platform} binary...")
+                self.logger.info(f"Downloading {platform} binary...")
                 binary_result = self.model_downloader.download_binary(model_dir, platform)
                 if binary_result:
-                    print(f"✅ Binary downloaded: {binary_result}")
+                    self.logger.info(f"Binary downloaded: {binary_result}")
         else:
-            print(f"⚠️  Platform {detector.system}-{detector.machine} not supported for binaries")
+            self.logger.warning(f"Platform {detector.system}-{detector.machine} not supported for binaries")
 
     def _verify_installation(self) -> None:
         """Verify that everything is working correctly."""
-        # Check system dependencies (ffmpeg is the main CLI tool we need)
+
         deps = {
             "ffmpeg": self._command_exists("ffmpeg"),
             "pydub": self._check_python_module("pydub"),
+            "python-magic": self._check_python_module("magic"),
         }
 
         missing = [name for name, installed in deps.items() if not installed]
         if missing:
             raise RuntimeError(f"Missing dependencies: {', '.join(missing)}")
 
-        # Check model files
+
         model_files = [
             "LFM2-Audio-1.5B-Q8_0.gguf",
             "mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf",
@@ -195,12 +243,12 @@ class SetupManager:
             if not filepath.exists():
                 raise RuntimeError(f"Missing model file: {filename}")
 
-        print("✅ All dependencies verified")
+        self.logger.info("All dependencies verified")
 
     def _command_exists(self, command: str) -> bool:
         """Check if a system command exists."""
         try:
-            # Use different flags for different commands
+
             if command == "ffmpeg":
                 subprocess.run([command, "-version"],
                              capture_output=True, check=True)
@@ -219,11 +267,4 @@ class SetupManager:
         except ImportError:
             return False
 
-    def get_config(self) -> dict[str, str]:
-        """Get configuration for transcription."""
-        return {
-            "model_dir": str(self.setup_dir / "models"),
-            "binary_path": str(self.setup_dir / "models" / "llama-lfm2-audio"),
-            "sample_rate": "48000",
-            "channels": "1",
-        }
+

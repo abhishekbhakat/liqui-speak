@@ -1,13 +1,31 @@
 """Configuration management for Liqui-Speak."""
 
+import logging
 import os
 from pathlib import Path
+
+MODEL_FILES = {
+    "model": "LFM2-Audio-1.5B-Q8_0.gguf",
+    "mmproj": "mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf",
+    "audiodecoder": "audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf",
+}
+
+TRANSCRIPTION_TIMEOUT = 60
+
+
+LOG_LEVEL = os.getenv("LIQUI_SPEAK_LOG_LEVEL", "INFO").upper()
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+def setup_logging() -> logging.Logger:
+    """Set up logging configuration for Liqui-Speak."""
+    logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
+    return logging.getLogger("liqui_speak")
 
 
 def get_config() -> dict[str, str]:
     """
     Get configuration for transcription.
-    
+
     Returns:
         Configuration dictionary with model paths and settings
     """
@@ -16,17 +34,18 @@ def get_config() -> dict[str, str]:
 
     config = {
         "model_dir": str(models_dir),
-        "model_path": str(models_dir / "LFM2-Audio-1.5B-Q8_0.gguf"),
-        "mmproj_path": str(models_dir / "mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf"),
-        "audiodecoder_path": str(models_dir / "audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf"),
+        "model_path": str(models_dir / MODEL_FILES["model"]),
+        "mmproj_path": str(models_dir / MODEL_FILES["mmproj"]),
+        "audiodecoder_path": str(models_dir / MODEL_FILES["audiodecoder"]),
         "binary_path": str(models_dir / "runners"),
-        "sample_rate": "48000",
-        "channels": "1",
-        "chunk_duration": "2.0",
-        "overlap": "0.5",
+        "sample_rate": 48000,
+        "channels": 1,
+        "chunk_duration": 2.0,
+        "overlap": 0.5,
+        "transcription_timeout": TRANSCRIPTION_TIMEOUT,
     }
 
-    # Override with environment variables if present
+
     for key in config:
         env_key = f"LIQUI_SPEAK_{key.upper()}"
         if env_key in os.environ:
@@ -39,7 +58,7 @@ def is_configured() -> bool:
     """Check if Liqui-Speak is properly configured."""
     config = get_config()
 
-    # Check if model files exist
+
     required_files = [
         config["model_path"],
         config["mmproj_path"],
