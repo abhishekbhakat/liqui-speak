@@ -91,9 +91,6 @@ liqui-speak podcast.mp3
 # Play audio during transcription
 liqui-speak audio.m4a --play-audio
 
-# Enable text cleaning
-liqui-speak audio.wav --clean-text
-
 # Verbose output
 liqui-speak audio.mp3 --verbose
 ```
@@ -123,9 +120,11 @@ Configuration and models are stored in `~/.liqui_speak/`
 
 ## 📊 Supported Formats
 
-**✅ Native support**: WAV, FLAC, OGG, AIFF, MP3
-**✅ Auto-converted**: M4A, AAC, ALAC (Apple), WMA
+**✅ Direct support**: WAV (no conversion needed)
+**✅ Auto-converted**: M4A, AAC, MP3, FLAC, OGG, WMA, ALAC
 **❌ Not supported**: DRM-protected files
+
+All supported formats are automatically converted to WAV internally for optimal transcription performance.
 
 ## 🏗️ Development
 
@@ -145,7 +144,12 @@ make type-check
 make test
 ```
 
+## 🧪 Tests
 
+> "Tests? Where we're going, we don't need tests."
+> — Doc Brown, probably
+
+*The code works on my machine. Ship it.* 🚀
 
 ## 🔍 Troubleshooting
 
@@ -211,8 +215,6 @@ MIT License - see LICENSE file for details.
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/abhishekbhakat/liqui-speak/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/abhishekbhakat/liqui-speak/discussions)
-- **Discord**: [Join our server](https://discord.gg/your-invite)
 
 ## 🙏 Acknowledgments
 

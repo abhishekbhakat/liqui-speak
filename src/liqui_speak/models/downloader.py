@@ -41,7 +41,7 @@ class ModelDownloader:
                     repo_id=self.repo_id,
                     filename=filename,
                     local_dir=str(target_dir),
-                    local_dir_use_symlinks=False
+                    token=None
                 )
                 self.logger.info(f"{filename} downloaded")
             except Exception as e:
@@ -72,9 +72,8 @@ class ModelDownloader:
             zip_path = runners_dir / binary_zip
             hf_hub_download(
                 repo_id=self.repo_id,
-                filename=f"runners/{platform}/{binary_zip}",
-                local_dir=str(target_dir),
-                local_dir_use_symlinks=False
+                filename=binary_zip,
+                local_dir=str(target_dir)
             )
 
 

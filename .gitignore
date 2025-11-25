@@ -1,7 +1,9 @@
 .venv/
 .ruff_cache/
 __pycache__/
+.pytest_cache/
 *.pyc
 dist/
 .flake8
 .python-version
+.coverage

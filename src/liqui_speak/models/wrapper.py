@@ -101,12 +101,14 @@ class LFM2AudioWrapper(BaseModelBackend):
             return transcription
 
         except subprocess.TimeoutExpired:
-            raise RuntimeError(f"Transcription timed out ({timeout}s)") from None
+            raise RuntimeError("Transcription timed out") from None
         except Exception as e:
             raise RuntimeError(f"Transcription failed: {str(e)}") from e
 
-    def _parse_output(self, output: str) -> str:
+    def _parse_output(self, output: str | None) -> str:
         """Parse model output to extract transcription - silent by default."""
+        if output is None:
+            return ""
         lines = output.strip().split('\n')
 
 
@@ -132,7 +134,7 @@ class LFM2AudioWrapper(BaseModelBackend):
 
 
         transcription = ' '.join(transcription_lines).strip()
-        return transcription if transcription else None
+        return transcription if transcription else ""
 
     def test_model(self, test_audio_path: str | None = None) -> bool:
         """Test if the model is working correctly."""
@@ -140,7 +142,7 @@ class LFM2AudioWrapper(BaseModelBackend):
             if test_audio_path:
 
                 result = self.transcribe_audio_file(test_audio_path)
-                return len(result.strip()) > 0
+                return len(result.strip()) > 0 if result else False
             else:
 
 

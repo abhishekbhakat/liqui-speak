@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 from liqui_speak.audio.converter import convert_audio_for_transcription
-from liqui_speak.audio.formats import is_format_supported
+from liqui_speak.audio.formats import needs_conversion
 from liqui_speak.core.config import get_config
 from liqui_speak.models.wrapper import LFM2AudioWrapper
 
@@ -33,7 +33,7 @@ def transcribe_audio(
         raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
 
 
-    if not is_format_supported(audio_file_path):
+    if needs_conversion(audio_file_path):
         if verbose:
             print(f"🔄 Converting {audio_path.suffix} to WAV format...")
 

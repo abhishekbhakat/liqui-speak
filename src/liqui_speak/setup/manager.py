@@ -202,7 +202,7 @@ class SetupManager:
             self.model_downloader.download_all_models(model_dir)
 
 
-        from liqui_speak.platform_utils import PlatformDetector
+        from liqui_speak.platform.detector import PlatformDetector
         detector = PlatformDetector()
         platform = detector.get_supported_platform()
 

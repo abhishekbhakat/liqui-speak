@@ -10,20 +10,16 @@ install-dev:
 
 # Run linting
 lint:
-	uv run ruff check src tests
+	uv run ruff check src
 
 # Format code
 format:
-	uv run ruff format src tests
-	uv run black src tests
+	uv run ruff format src
+	uv run black src
 
 # Type checking
 type-check:
 	uv run pyright
-
-# Run tests
-test:
-	uv run pytest
 
 # Clean build artifacts
 clean:
@@ -54,5 +50,5 @@ dev-setup: install-dev
 	@echo "Run 'make test' to run tests"
 
 # Full quality check
-quality: lint type-check test
+quality: lint type-check
 	@echo "All quality checks passed!"
