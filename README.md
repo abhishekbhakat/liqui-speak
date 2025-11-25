@@ -8,7 +8,7 @@ Liqui-Speak automates the entire setup process for audio transcription, handling
 
 ```bash
 # Install the package
-pip install liqui-speak
+uv tool install liqui-speak
 
 # Run one-time setup (installs everything)
 liqui-speak config
@@ -35,6 +35,7 @@ liqui-speak audio.m4a
 - Package manager: Homebrew (macOS/Linux), apt/yum/pacman (Linux), or Chocolatey (Windows)
 
 **Installing libmagic:**
+
 ```bash
 # macOS
 brew install libmagic
@@ -55,7 +56,7 @@ pip install python-magic-bin
 ### Install Package
 
 ```bash
-pip install liqui-speak
+uv tool install liqui-speak
 ```
 
 ### First-time Setup
