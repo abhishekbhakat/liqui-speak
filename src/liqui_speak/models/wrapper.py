@@ -105,7 +105,7 @@ class LFM2AudioWrapper(BaseModelBackend):
         except Exception as e:
             raise RuntimeError(f"Transcription failed: {str(e)}") from e
 
-    def _parse_output(self, output: str | None) -> str:
+    def _parse_output(self, output: str | None) -> str | None:
         """Parse model output to extract transcription - silent by default."""
         if output is None:
             return ""
@@ -134,7 +134,7 @@ class LFM2AudioWrapper(BaseModelBackend):
 
 
         transcription = ' '.join(transcription_lines).strip()
-        return transcription if transcription else ""
+        return transcription if transcription else None
 
     def test_model(self, test_audio_path: str | None = None) -> bool:
         """Test if the model is working correctly."""
