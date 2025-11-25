@@ -1,0 +1,91 @@
+"""Platform detection and compatibility utilities."""
+
+import platform
+import subprocess
+from pathlib import Path
+
+
+class PlatformDetector:
+    """Detects platform and architecture for binary compatibility."""
+
+    def __init__(self):
+        self.system = platform.system()
+        self.machine = platform.machine()
+        self.python_version = platform.python_version()
+
+    def get_platform_info(self) -> dict:
+        """Get detailed platform information."""
+        return {
+            "system": self.system,
+            "machine": self.machine,
+            "python_version": self.python_version,
+            "platform": platform.platform(),
+            "processor": platform.processor(),
+        }
+
+    def get_supported_platform(self) -> str | None:
+        """
+        Get the platform identifier for llama.cpp binary downloads.
+        
+        Returns:
+            Platform string like 'macos-arm64' or None if unsupported
+        """
+        system = self.system.lower()
+        machine = self.machine.lower()
+
+        # Map machine architecture
+        if machine in ["x86_64", "amd64"]:
+            arch = "x64"
+        elif machine in ["arm64", "aarch64"]:
+            arch = "arm64"
+        else:
+            return None
+
+        # Map system
+        if system == "darwin":
+            return f"macos-{arch}"
+        elif system == "linux":
+            return f"ubuntu-{arch}"
+        elif system == "windows":
+            return f"windows-{arch}"
+        else:
+            return None
+
+    def check_dependencies(self) -> dict:
+        """Check if required system dependencies are available."""
+        deps = {
+            "portaudio": self._check_command("portaudio"),
+            "ffmpeg": self._check_command("ffmpeg"),
+        }
+        return deps
+
+    def _check_command(self, command: str) -> bool:
+        """Check if a system command exists."""
+        try:
+            subprocess.run([command, "--version"],
+                         capture_output=True, check=True)
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False
+
+    def verify_python_version(self) -> bool:
+        """Verify Python version is >= 3.12."""
+        import sys
+        return sys.version_info >= (3, 12)
+
+    def get_homebrew_path(self) -> Path | None:
+        """Get Homebrew installation path on macOS."""
+        if self.system != "Darwin":
+            return None
+
+        # Common Homebrew paths
+        paths = [
+            Path("/opt/homebrew"),  # Apple Silicon
+            Path("/usr/local"),     # Intel Macs
+        ]
+
+        for path in paths:
+            if path.exists() and (path / "bin" / "brew").exists():
+                return path
+
+        return None
