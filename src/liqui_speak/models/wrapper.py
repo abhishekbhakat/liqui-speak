@@ -1,4 +1,4 @@
-"""Model wrapper for llama.cpp LFM2-Audio integration."""
+"""Model wrapper for llama.cpp LFM2.5-Audio integration."""
 
 import logging
 import subprocess
@@ -28,7 +28,8 @@ class LFM2AudioWrapper(BaseModelBackend):
         required_files = [
             str(self.config["model_path"]),
             str(self.config["mmproj_path"]),
-            str(self.config["audiodecoder_path"]),
+            str(self.config["vocoder_path"]),
+            str(self.config["tokenizer_path"]),
         ]
 
         for file_path in required_files:
@@ -37,7 +38,7 @@ class LFM2AudioWrapper(BaseModelBackend):
 
     def transcribe_audio_file(self, audio_file_path: str) -> str | None:
         """
-        Transcribe audio file to text using LFM2 model.
+        Transcribe audio file to text using LFM2.5 model.
 
         Args:
             audio_file_path: Path to audio file
@@ -60,7 +61,7 @@ class LFM2AudioWrapper(BaseModelBackend):
         if not platform:
             raise RuntimeError(f"Unsupported platform: {detector.system}-{detector.machine}")
 
-        binary_path = Path(str(self.config["binary_path"])) / platform / "bin" / "llama-lfm2-audio"
+        binary_path = Path(str(self.config["binary_path"])) / platform / "bin" / "llama-liquid-audio-cli"
 
         if not binary_path.exists():
             raise ValueError(f"Binary not found: {binary_path}")
@@ -70,7 +71,8 @@ class LFM2AudioWrapper(BaseModelBackend):
             str(binary_path),
             "-m", str(self.config["model_path"]),
             "--mmproj", str(self.config["mmproj_path"]),
-            "-mv", str(self.config["audiodecoder_path"]),
+            "-mv", str(self.config["vocoder_path"]),
+            "--tts-speaker-file", str(self.config["tokenizer_path"]),
             "-sys", "Perform ASR.",
             "--audio", str(audio_path)
         ]
@@ -106,32 +108,37 @@ class LFM2AudioWrapper(BaseModelBackend):
             raise RuntimeError(f"Transcription failed: {str(e)}") from e
 
     def _parse_output(self, output: str | None) -> str | None:
-        """Parse model output to extract transcription - silent by default."""
+        """Parse model output to extract transcription from LFM2.5 output."""
         if output is None:
             return None
+
+        # LFM2.5 output format includes metadata followed by:
+        # === GENERATED TEXT === <actual transcription>
+        # Extract only the text after the marker
+        marker = "=== GENERATED TEXT ==="
+        if marker in output:
+            # Get everything after the marker
+            text = output.split(marker, 1)[1].strip()
+            return text if text else None
+
+        # Fallback: filter out known metadata patterns
         lines = output.strip().split('\n')
-
-
         transcription_lines = []
         for line in lines:
             line = line.strip()
             if not line:
                 continue
 
-
+            # Skip metadata lines
             if any(pattern in line for pattern in [
                 "load_gguf:", "main:", "encoding audio", "audio slice",
-                "decoding audio", "n_tokens_batch", "audio decoded"
+                "decoding audio", "n_tokens_batch", "audio decoded",
+                "audio samples per second", "text tokens per second",
+                "samples per second", "tokens per second", " ms"
             ]):
                 continue
 
-
-            if " ms" in line:
-                continue
-
-
             transcription_lines.append(line)
-
 
         transcription = ' '.join(transcription_lines).strip()
         return transcription if transcription else None

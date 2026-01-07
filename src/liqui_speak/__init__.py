@@ -1,6 +1,8 @@
-"""Liqui-Speak: Automated audio transcription with LFM2-Audio model."""
+"""Liqui-Speak: Automated audio transcription with LFM2.5-Audio model."""
 
-__version__ = "0.1.0"
+from importlib.metadata import version
+
+__version__ = version("liqui-speak")
 __author__ = "Abhishek Bhakat"
 __description__ = "One-command setup for real-time audio transcription"
 

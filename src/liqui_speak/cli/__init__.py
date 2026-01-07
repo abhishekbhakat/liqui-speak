@@ -14,7 +14,7 @@ def main():
     logger = setup_logging()
 
     parser = argparse.ArgumentParser(
-        description="Liqui-Speak: Automated audio transcription with LFM2-Audio",
+        description="Liqui-Speak: Automated audio transcription with LFM2.5-Audio",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

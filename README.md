@@ -1,6 +1,6 @@
 # Liqui-Speak 🎤
 
-**One-command setup for real-time audio transcription using LFM2-Audio-1.5B**
+**One-command setup for real-time audio transcription using LFM2.5-Audio-1.5B**
 
 Liqui-Speak automates the entire setup process for audio transcription, handling system dependencies, model downloads, and format conversions automatically.
 
@@ -68,7 +68,7 @@ liqui-speak config
 This will:
 
 - Install PortAudio and FFmpeg system dependencies
-- Download LFM2-Audio-1.5B model files (~1.5GB)
+- Download LFM2.5-Audio-1.5B model files (~1.5GB)
 - Download platform-specific llama.cpp binary
 - Verify installation
 
@@ -219,7 +219,7 @@ MIT License - see LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
-- **LFM2-Audio-1.5B model**: LiquidAI team
+- **LFM2.5-Audio-1.5B model**: LiquidAI team
 - **llama.cpp**: Georgi Gerganov
 - **PyDub**: James Robert
 - **Hugging Face**: Model hosting platform

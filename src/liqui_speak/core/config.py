@@ -5,9 +5,10 @@ import os
 from pathlib import Path
 
 MODEL_FILES = {
-    "model": "LFM2-Audio-1.5B-Q8_0.gguf",
-    "mmproj": "mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf",
-    "audiodecoder": "audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf",
+    "model": "LFM2.5-Audio-1.5B-F16.gguf",
+    "mmproj": "mmproj-LFM2.5-Audio-1.5B-F16.gguf",
+    "vocoder": "vocoder-LFM2.5-Audio-1.5B-F16.gguf",
+    "tokenizer": "tokenizer-LFM2.5-Audio-1.5B-F16.gguf",
 }
 
 TRANSCRIPTION_TIMEOUT = 60
@@ -36,7 +37,8 @@ def get_config() -> dict[str, str | int | float]:
         "model_dir": str(models_dir),
         "model_path": str(models_dir / MODEL_FILES["model"]),
         "mmproj_path": str(models_dir / MODEL_FILES["mmproj"]),
-        "audiodecoder_path": str(models_dir / MODEL_FILES["audiodecoder"]),
+        "vocoder_path": str(models_dir / MODEL_FILES["vocoder"]),
+        "tokenizer_path": str(models_dir / MODEL_FILES["tokenizer"]),
         "binary_path": str(models_dir / "runners"),
         "sample_rate": 48000,
         "channels": 1,
@@ -70,7 +72,8 @@ def is_configured() -> bool:
     required_files = [
         config["model_path"],
         config["mmproj_path"],
-        config["audiodecoder_path"],
+        config["vocoder_path"],
+        config["tokenizer_path"],
     ]
 
     for file_path in required_files:

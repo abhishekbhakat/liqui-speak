@@ -9,6 +9,7 @@ from pathlib import Path
 
 from liqui_speak.models.downloader import ModelDownloader
 from liqui_speak.platform.detector import PlatformDetector
+from liqui_speak.setup.shortcut_template import install_shortcut
 
 
 class SetupManager:
@@ -55,6 +56,12 @@ class SetupManager:
             if verbose:
                 self.logger.info("Verifying installation...")
             self._verify_installation()
+
+            # Install macOS Shortcut (macOS only)
+            if self.platform.system == "Darwin":
+                if verbose:
+                    self.logger.info("Installing macOS Shortcut...")
+                self._install_shortcut(verbose=verbose)
 
             if verbose:
                 self.logger.info("Setup complete! You can now use: liqui-speak your_audio.m4a")
@@ -184,15 +191,16 @@ class SetupManager:
                 ) from e
 
     def _download_models(self, force: bool = False) -> None:
-        """Download LFM2-Audio model and binaries."""
+        """Download LFM2.5-Audio model and binaries."""
         model_dir = self.setup_dir / "models"
         model_dir.mkdir(exist_ok=True)
 
 
         model_files = [
-            "LFM2-Audio-1.5B-Q8_0.gguf",
-            "mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf",
-            "audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf"
+            "LFM2.5-Audio-1.5B-F16.gguf",
+            "mmproj-LFM2.5-Audio-1.5B-F16.gguf",
+            "vocoder-LFM2.5-Audio-1.5B-F16.gguf",
+            "tokenizer-LFM2.5-Audio-1.5B-F16.gguf"
         ]
 
 
@@ -201,7 +209,7 @@ class SetupManager:
         if all_models_exist:
             self.logger.info("Model files already downloaded")
         else:
-            self.logger.info("Downloading LFM2-Audio-1.5B model files...")
+            self.logger.info("Downloading LFM2.5-Audio-1.5B model files...")
 
             self.model_downloader.download_all_models(model_dir)
 
@@ -211,7 +219,7 @@ class SetupManager:
         platform = detector.get_supported_platform()
 
         if platform:
-            binary_path = model_dir / "runners" / platform / "bin" / "llama-lfm2-audio"
+            binary_path = model_dir / "runners" / platform / "bin" / "llama-liquid-audio-cli"
             if binary_path.exists():
                 self.logger.info(f"Binary already downloaded for {platform}")
             else:
@@ -237,9 +245,10 @@ class SetupManager:
 
 
         model_files = [
-            "LFM2-Audio-1.5B-Q8_0.gguf",
-            "mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf",
-            "audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf"
+            "LFM2.5-Audio-1.5B-F16.gguf",
+            "mmproj-LFM2.5-Audio-1.5B-F16.gguf",
+            "vocoder-LFM2.5-Audio-1.5B-F16.gguf",
+            "tokenizer-LFM2.5-Audio-1.5B-F16.gguf"
         ]
 
         for filename in model_files:
@@ -273,4 +282,41 @@ class SetupManager:
         except ImportError:
             return False
 
+    def _install_shortcut(self, verbose: bool = True) -> None:
+        """Install macOS Shortcut for voice transcription."""
+        # The ~/.liqui_speak directory is already created in __init__, just use it
+        # No separate directory needed - recordings go in the main app dir
+        
+        # Find the liqui-speak binary path
+        # Try to find it in the current venv or system path
+        import shutil
+        binary_path = shutil.which("liqui-speak")
+        
+        if not binary_path:
+            # Fall back to common locations
+            venv_binary = Path(sys.prefix) / "bin" / "liqui-speak"
+            if venv_binary.exists():
+                binary_path = str(venv_binary)
+            else:
+                self.logger.warning("Could not find liqui-speak binary, skipping shortcut installation")
+                return
+        
+        home_dir = str(Path.home())
+        
+        try:
+            if verbose:
+                self.logger.info("Opening Shortcuts app - please click 'Add Shortcut' to confirm")
+            
+            success = install_shortcut(binary_path, home_dir)
+            
+            if success:
+                self.logger.info("Shortcut 'liqui-speak' ready to install")
+                self.logger.info("📱 TIP: On first run, macOS will ask for permissions:")
+                self.logger.info("   • Microphone access (for recording)")
+                self.logger.info("   • File access (to save recordings)")
+                self.logger.info("   • Shell script execution (for transcription)")
+            else:
+                self.logger.warning("Could not open shortcut file")
+        except Exception as e:
+            self.logger.warning(f"Shortcut installation skipped: {e}")
 

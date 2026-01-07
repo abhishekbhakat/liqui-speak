@@ -12,11 +12,12 @@ class ModelDownloader:
     """Handles downloading models and binaries from Hugging Face."""
 
     def __init__(self):
-        self.repo_id = "LiquidAI/LFM2-Audio-1.5B-GGUF"
+        self.repo_id = "LiquidAI/LFM2.5-Audio-1.5B-GGUF"
         self.model_files = [
-            "LFM2-Audio-1.5B-Q8_0.gguf",
-            "mmproj-audioencoder-LFM2-Audio-1.5B-Q8_0.gguf",
-            "audiodecoder-LFM2-Audio-1.5B-Q8_0.gguf",
+            "LFM2.5-Audio-1.5B-F16.gguf",
+            "mmproj-LFM2.5-Audio-1.5B-F16.gguf",
+            "vocoder-LFM2.5-Audio-1.5B-F16.gguf",
+            "tokenizer-LFM2.5-Audio-1.5B-F16.gguf",
         ]
         self.logger = logging.getLogger("liqui_speak")
 
@@ -32,7 +33,7 @@ class ModelDownloader:
         """
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        self.logger.info("Downloading LFM2-Audio-1.5B model files...")
+        self.logger.info("Downloading LFM2.5-Audio-1.5B model files...")
 
         for filename in self.model_files:
             self.logger.info(f"Downloading {filename}...")
@@ -61,7 +62,7 @@ class ModelDownloader:
         Returns:
             Path to extracted binary or None if failed
         """
-        binary_zip = f"lfm2-audio-{platform}.zip"
+        binary_zip = f"llama-liquid-audio-{platform}.zip"
         runners_dir = target_dir / "runners" / platform
         runners_dir.mkdir(parents=True, exist_ok=True)
 
@@ -71,10 +72,10 @@ class ModelDownloader:
 
             hf_hub_download(
                 repo_id=self.repo_id,
-                filename=binary_zip,
+                filename=f"runners/{binary_zip}",
                 local_dir=str(target_dir)
             )
-            zip_path = target_dir / binary_zip
+            zip_path = target_dir / "runners" / binary_zip
 
 
             self.logger.info("Extracting binary...")
@@ -82,7 +83,7 @@ class ModelDownloader:
                 zip_ref.extractall(runners_dir)
 
 
-            binary_name = "llama-lfm2-audio"
+            binary_name = "llama-liquid-audio-cli"
             binary_path = None
 
 
