@@ -25,6 +25,7 @@ liqui-speak audio.m4a
 - **🎯 Cross-platform**: macOS, Linux, Windows support
 - **📦 Complete automation**: Downloads models, binaries, libraries
 - **🔧 Zero configuration**: Works out of the box
+- **📱 macOS Shortcut**: Voice-to-clipboard with one keystroke
 
 ## 📋 Installation
 
@@ -68,9 +69,25 @@ liqui-speak config
 This will:
 
 - Install PortAudio and FFmpeg system dependencies
-- Download LFM2.5-Audio-1.5B model files (~1.5GB)
+- Download LFM2.5-Audio-1.5B model files
 - Download platform-specific llama.cpp binary
+- Install macOS Shortcut for voice transcription (macOS only)
 - Verify installation
+
+### Quantization Options
+
+Choose model size vs. quality trade-off:
+
+```bash
+# F16 - Full precision (default, ~3.4GB, best quality)
+liqui-speak config
+
+# Q8_0 - 8-bit quantization (~1.8GB)
+liqui-speak config --quant Q8_0
+
+# Q4_0 - 4-bit quantization (~1GB, smallest)
+liqui-speak config --quant Q4_0
+```
 
 ## 🎤 Usage
 
@@ -106,7 +123,17 @@ text = transcribe("audio.m4a")
 print(text)
 ```
 
-## 🔧 Configuration
+## � macOS Shortcut
+
+During `liqui-speak config`, a macOS Shortcut is automatically installed that:
+
+1. **Records audio** - Start speaking immediately
+2. **Transcribes** - Runs liqui-speak on the recording
+3. **Copies to clipboard** - Ready to paste anywhere
+
+> **First run permissions**: macOS will ask for microphone access, file access, and shell script execution permissions.
+
+## �🔧 Configuration
 
 ### Environment Variables
 
@@ -190,9 +217,7 @@ Make sure you have admin/sudo access for system dependency installation.
 ### Python Packages
 
 - `pydub` - Audio conversion
-- `soundfile` - Audio I/O
 - `huggingface-hub` - Model downloads
-- `click` - CLI framework
 - `python-magic` - Format detection
 
 ### System Dependencies
