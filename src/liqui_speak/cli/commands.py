@@ -16,8 +16,10 @@ def handle_config(args) -> int:
 
     if args.force:
         logger.info("Force mode enabled - reinstalling everything")
+    
+    logger.info(f"Using {args.quant} quantization")
 
-    success = setup_manager.run_full_setup(verbose=args.verbose, force=args.force)
+    success = setup_manager.run_full_setup(verbose=args.verbose, force=args.force, quant=args.quant)
 
     if success:
         logger.info("Configuration complete!")

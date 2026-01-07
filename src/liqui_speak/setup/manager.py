@@ -22,13 +22,14 @@ class SetupManager:
         self.setup_dir.mkdir(exist_ok=True)
         self.logger = logging.getLogger("liqui_speak")
 
-    def run_full_setup(self, verbose: bool = True, force: bool = False) -> bool:
+    def run_full_setup(self, verbose: bool = True, force: bool = False, quant: str = "F16") -> bool:
         """
         Run complete setup process.
 
         Args:
             verbose: Show detailed progress
             force: Force reinstallation even if dependencies already exist
+            quant: Quantization level (F16, Q8_0, Q4_0)
 
         Returns:
             True if setup successful
@@ -50,7 +51,7 @@ class SetupManager:
 
             if verbose:
                 self.logger.info("Downloading models...")
-            self._download_models(force=force)
+            self._download_models(force=force, quant=quant)
 
 
             if verbose:
@@ -190,28 +191,24 @@ class SetupManager:
                     f"python-magic installation failed. Ensure libmagic is installed: {e}"
                 ) from e
 
-    def _download_models(self, force: bool = False) -> None:
+    def _download_models(self, force: bool = False, quant: str = "F16") -> None:
         """Download LFM2.5-Audio model and binaries."""
+        from liqui_speak.core.config import get_model_files
+        
         model_dir = self.setup_dir / "models"
         model_dir.mkdir(exist_ok=True)
 
-
-        model_files = [
-            "LFM2.5-Audio-1.5B-F16.gguf",
-            "mmproj-LFM2.5-Audio-1.5B-F16.gguf",
-            "vocoder-LFM2.5-Audio-1.5B-F16.gguf",
-            "tokenizer-LFM2.5-Audio-1.5B-F16.gguf"
-        ]
-
+        model_files_dict = get_model_files(quant)
+        model_files = list(model_files_dict.values())
 
         all_models_exist = all((model_dir / filename).exists() for filename in model_files)
 
-        if all_models_exist:
+        if all_models_exist and not force:
             self.logger.info("Model files already downloaded")
         else:
-            self.logger.info("Downloading LFM2.5-Audio-1.5B model files...")
+            self.logger.info(f"Downloading LFM2.5-Audio-1.5B ({quant}) model files...")
 
-            self.model_downloader.download_all_models(model_dir)
+            self.model_downloader.download_all_models(model_dir, quant=quant)
 
 
         from liqui_speak.platform.detector import PlatformDetector
@@ -242,19 +239,6 @@ class SetupManager:
         missing = [name for name, installed in deps.items() if not installed]
         if missing:
             raise RuntimeError(f"Missing dependencies: {', '.join(missing)}")
-
-
-        model_files = [
-            "LFM2.5-Audio-1.5B-F16.gguf",
-            "mmproj-LFM2.5-Audio-1.5B-F16.gguf",
-            "vocoder-LFM2.5-Audio-1.5B-F16.gguf",
-            "tokenizer-LFM2.5-Audio-1.5B-F16.gguf"
-        ]
-
-        for filename in model_files:
-            filepath = self.setup_dir / "models" / filename
-            if not filepath.exists():
-                raise RuntimeError(f"Missing model file: {filename}")
 
         self.logger.info("All dependencies verified")
 

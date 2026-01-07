@@ -4,12 +4,23 @@ import logging
 import os
 from pathlib import Path
 
-MODEL_FILES = {
-    "model": "LFM2.5-Audio-1.5B-F16.gguf",
-    "mmproj": "mmproj-LFM2.5-Audio-1.5B-F16.gguf",
-    "vocoder": "vocoder-LFM2.5-Audio-1.5B-F16.gguf",
-    "tokenizer": "tokenizer-LFM2.5-Audio-1.5B-F16.gguf",
-}
+# Available quantization levels
+QUANT_LEVELS = ["F16", "Q8_0", "Q4_0"]
+DEFAULT_QUANT = "F16"
+
+def get_model_files(quant: str = DEFAULT_QUANT) -> dict[str, str]:
+    """Get model filenames for the specified quantization level."""
+    if quant not in QUANT_LEVELS:
+        raise ValueError(f"Invalid quantization level: {quant}. Choose from: {QUANT_LEVELS}")
+    return {
+        "model": f"LFM2.5-Audio-1.5B-{quant}.gguf",
+        "mmproj": f"mmproj-LFM2.5-Audio-1.5B-{quant}.gguf",
+        "vocoder": f"vocoder-LFM2.5-Audio-1.5B-{quant}.gguf",
+        "tokenizer": f"tokenizer-LFM2.5-Audio-1.5B-{quant}.gguf",
+    }
+
+# Default model files (F16)
+MODEL_FILES = get_model_files(DEFAULT_QUANT)
 
 TRANSCRIPTION_TIMEOUT = 60
 

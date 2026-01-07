@@ -48,6 +48,12 @@ Examples:
         action="store_true",
         help="Force reinstallation of dependencies"
     )
+    config_parser.add_argument(
+        "--quant",
+        choices=["F16", "Q8_0", "Q4_0"],
+        default="F16",
+        help="Model quantization level: F16 (default, best quality), Q8_0 (smaller), Q4_0 (smallest)"
+    )
 
 
     transcribe_parser = subparsers.add_parser(

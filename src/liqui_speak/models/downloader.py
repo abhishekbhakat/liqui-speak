@@ -13,29 +13,27 @@ class ModelDownloader:
 
     def __init__(self):
         self.repo_id = "LiquidAI/LFM2.5-Audio-1.5B-GGUF"
-        self.model_files = [
-            "LFM2.5-Audio-1.5B-F16.gguf",
-            "mmproj-LFM2.5-Audio-1.5B-F16.gguf",
-            "vocoder-LFM2.5-Audio-1.5B-F16.gguf",
-            "tokenizer-LFM2.5-Audio-1.5B-F16.gguf",
-        ]
         self.logger = logging.getLogger("liqui_speak")
 
-    def download_all_models(self, target_dir: Path) -> bool:
+    def download_all_models(self, target_dir: Path, quant: str = "F16") -> bool:
         """
         Download all required model files.
 
         Args:
             target_dir: Directory to save models
+            quant: Quantization level (F16, Q8_0, Q4_0)
 
         Returns:
             True if all downloads successful
         """
+        from liqui_speak.core.config import get_model_files
+        
         target_dir.mkdir(parents=True, exist_ok=True)
+        model_files = list(get_model_files(quant).values())
 
-        self.logger.info("Downloading LFM2.5-Audio-1.5B model files...")
+        self.logger.info(f"Downloading LFM2.5-Audio-1.5B ({quant}) model files...")
 
-        for filename in self.model_files:
+        for filename in model_files:
             self.logger.info(f"Downloading {filename}...")
             try:
                 hf_hub_download(
