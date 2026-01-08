@@ -57,7 +57,7 @@ def handle_transcribe(args) -> int:
         )
 
         if result is not None:
-            print(result.strip())
+            print(result.strip(), end='')
             return 0
         else:
             if args.verbose:

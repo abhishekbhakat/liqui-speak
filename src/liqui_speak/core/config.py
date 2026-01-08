@@ -1,5 +1,6 @@
 """Configuration management for Liqui-Speak."""
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -7,6 +8,8 @@ from pathlib import Path
 # Available quantization levels
 QUANT_LEVELS = ["F16", "Q8_0", "Q4_0"]
 DEFAULT_QUANT = "F16"
+
+CONFIG_FILE = "config.json"
 
 def get_model_files(quant: str = DEFAULT_QUANT) -> dict[str, str]:
     """Get model filenames for the specified quantization level."""
@@ -34,6 +37,31 @@ def setup_logging() -> logging.Logger:
     return logging.getLogger("liqui_speak")
 
 
+def get_config_file_path() -> Path:
+    """Get path to config.json file."""
+    return Path.home() / ".liqui_speak" / CONFIG_FILE
+
+
+def load_user_config() -> dict:
+    """Load user configuration from config.json."""
+    config_path = get_config_file_path()
+    if config_path.exists():
+        try:
+            with open(config_path) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return {}
+    return {}
+
+
+def save_user_config(config: dict) -> None:
+    """Save user configuration to config.json."""
+    config_path = get_config_file_path()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+
+
 def get_config() -> dict[str, str | int | float]:
     """
     Get configuration for transcription.
@@ -43,19 +71,25 @@ def get_config() -> dict[str, str | int | float]:
     """
     setup_dir = Path.home() / ".liqui_speak"
     models_dir = setup_dir / "models"
+    
+    # Load user config to get quantization level
+    user_config = load_user_config()
+    quant = user_config.get("quant", DEFAULT_QUANT)
+    model_files = get_model_files(quant)
 
     config = {
         "model_dir": str(models_dir),
-        "model_path": str(models_dir / MODEL_FILES["model"]),
-        "mmproj_path": str(models_dir / MODEL_FILES["mmproj"]),
-        "vocoder_path": str(models_dir / MODEL_FILES["vocoder"]),
-        "tokenizer_path": str(models_dir / MODEL_FILES["tokenizer"]),
+        "model_path": str(models_dir / model_files["model"]),
+        "mmproj_path": str(models_dir / model_files["mmproj"]),
+        "vocoder_path": str(models_dir / model_files["vocoder"]),
+        "tokenizer_path": str(models_dir / model_files["tokenizer"]),
         "binary_path": str(models_dir / "runners"),
         "sample_rate": 48000,
         "channels": 1,
         "chunk_duration": 2.0,
         "overlap": 0.5,
         "transcription_timeout": TRANSCRIPTION_TIMEOUT,
+        "quant": quant,
     }
 
 

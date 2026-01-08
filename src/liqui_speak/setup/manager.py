@@ -52,6 +52,12 @@ class SetupManager:
             if verbose:
                 self.logger.info("Downloading models...")
             self._download_models(force=force, quant=quant)
+            
+            # Save user configuration
+            from liqui_speak.core.config import save_user_config
+            save_user_config({"quant": quant})
+            if verbose:
+                self.logger.info(f"Saved configuration (quant={quant})")
 
 
             if verbose:
